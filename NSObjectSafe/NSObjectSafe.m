@@ -566,6 +566,13 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
         [obj release];
         
+        /* iOS11 objectAtIndexedSubscript */
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 11.0){
+            obj = [[NSArray alloc] initWithObjects:@0, nil];
+            [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
+            [obj release];
+        }
+        
         /* iOS10 以上，单个内容类型是__NSArraySingleObjectI */
         if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
             obj = [[NSArray alloc] initWithObjects:@0, nil];
@@ -633,6 +640,12 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
     return [self hookArrayWithObjects:objs count:index];
 }
+- (id)hookObjectAtIndexedSubscript:(NSUInteger)index {
+    if (index < self.count) {
+        return [self hookObjectAtIndex:index];
+    }
+    return nil;
+}
 @end
 
 @implementation NSMutableArray(Safe)
@@ -651,7 +664,10 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(hookReplaceObjectAtIndex:withObject:)];
         [obj swizzleInstanceMethod:@selector(removeObjectsInRange:) withMethod:@selector(hookRemoveObjectsInRange:)];
         [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
-        
+        /* iOS11 objectAtIndexedSubscript */
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 11.0){
+            [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
+        }
         [obj release];
     });
 }
@@ -697,6 +713,12 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 
+- (id)hookObjectAtIndexedSubscript:(NSUInteger)index {
+    if (index < self.count) {
+        return [self hookObjectAtIndex:index];
+    }
+    return nil;
+}
 
 - (void) hookReplaceObjectAtIndex:(NSUInteger)index withObject:(id)anObject {
     if (index < self.count && anObject) {
